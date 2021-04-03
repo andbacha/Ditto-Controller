@@ -10,15 +10,22 @@
 #define TRIGGER_ACTION 12
 
 #define OPTION_MAIN 0
-#define OPTION_MEASURE 1
-#define OPTION_CALIBRATE 2
+#define OPTION_DIVIDER 1
+#define OPTION_MEASURE 2
+#define OPTION_CALIBRATE 3
+
+#define MIN_LOOP 1
+#define MAX_LOOP 99
 
 /* VARIABLES =============================================================== */
 
 LiquidCrystal lcd(2, 3, 4, 5, 6, 7);
 byte currentLoop = 1;
-bool isSyncPulseOdd = true;
 byte currentOption = 0;
+byte pulsesPerBar = 1;
+// bool isSyncPulseOdd = true;
+
+
 
 /*  BOARD SETUP ============================================================ */
 
@@ -35,10 +42,12 @@ void initializeIO() {
 
 void clearLine(byte line) {
   lcd.setCursor(0, line);
-  lcd.print("                ");
+  for (byte i = 0; i < 16; i++){
+    lcd.print(" ");
+  }
 }
 
-void printLine(byte line, String text) {
+void printLine(byte line, const char* text) {
   clearLine(line);
   lcd.setCursor(0, line);
   lcd.print(text);
@@ -47,14 +56,13 @@ void printLine(byte line, String text) {
 /* DISPLAY =================================================================== */
 
 void helloScreen() {
-  int i = 0;
-  while (i < 3) {
-    lcd.setCursor(0, 0);
-    lcd.print("Ditto+ CTRL");
+  for (byte i = 0; i < 3; i++) {
+    printLine(0, "* Ditto+  CTRL *");
+    printLine(1, "*    v. 0.1    *");
     delay(300);
-    lcd.clear();
+    printLine(0, "  Ditto+  CTRL  ");
+    printLine(1, "     v. 0.1     ");
     delay(300);
-    i++;
   }
 }
 
@@ -111,17 +119,26 @@ void handleActionButtonClick() {
 }
 
 void handleOptionsButtonClick() {
-  waitForButtonRelease(BTN_OPTIONS);
   currentOption++;
-  if (currentOption == 3) currentOption = 0;
+  waitForButtonRelease(BTN_OPTIONS);
+  if (currentOption == 4) currentOption = 0;
   
   switch (currentOption) {
     case OPTION_MAIN:
       viewMain();
+      break;
+    case OPTION_DIVIDER:
+      viewDivider();
+      break;
     case OPTION_MEASURE:
       viewMeasure();
+      break;
     case OPTION_CALIBRATE:
       viewCalibrate();
+      break;
+    default:
+      viewMain();
+      break;
   }
 }
 
@@ -133,14 +150,42 @@ void viewMain() {
   printLine(1, "SYNC");
 }
 
+void viewDivider() {
+  printLine(0, "OPTIONS --------");
+  printLine(1, "| Pulses/bar:   ");
+  while(true) {
+    if (digitalRead(BTN_LEFT) == LOW) {
+      waitForButtonRelease(BTN_LEFT);
+      if (pulsesPerBar == 2) pulsesPerBar--;
+    } if (digitalRead(BTN_RIGHT) == LOW) {
+      waitForButtonRelease(BTN_RIGHT);
+      if (pulsesPerBar == 1) pulsesPerBar++;
+    } if (digitalRead(BTN_OPTIONS) == LOW) {
+      break;
+    }
+    lcd.setCursor(14, 1);
+    lcd.print(pulsesPerBar);
+  }
+}
+
 void viewMeasure() {
-  printLine(0, "OPTIONS");
-  printLine(1, "Measure");
+  printLine(0, "OPTIONS --------");
+  printLine(1, "| Measure: 4/4");
+  while(true) {
+    if (digitalRead(BTN_OPTIONS) == LOW) {
+      break;
+    }
+  }
 }
 
 void viewCalibrate() {
-  printLine(0, "OPTIONS");
-  printLine(1, "Calibrate");
+  printLine(0, "OPTIONS --------");
+  printLine(1, "| Calibrate < >");
+  while(true) {
+    if (digitalRead(BTN_OPTIONS) == LOW) {
+      break;
+    }
+  }
 }
 
 /* ACTIONS ============================================== */
@@ -158,7 +203,7 @@ void triggerLooper(char button) {
 bool waitForSync() {
   while(true){
       if (digitalRead(SYNC) == HIGH) {
-        isSyncPulseOdd = !isSyncPulseOdd;
+        // isSyncPulseOdd = !isSyncPulseOdd;
         return true;
     }
   }
@@ -177,10 +222,10 @@ void loop() {
   if (digitalRead(BTN_ACTION) == LOW) {
     handleActionButtonClick();
   } else if (digitalRead(BTN_LEFT) == LOW) {
-    currentLoop--;
+    if (currentLoop != MIN_LOOP) currentLoop--;
     handleButtonClick(BTN_LEFT);
   } else if (digitalRead(BTN_RIGHT) == LOW) {
-    currentLoop++;
+    if (currentLoop != MAX_LOOP) currentLoop++;
     handleButtonClick(BTN_RIGHT);
   } else if (digitalRead(BTN_OPTIONS) == LOW) {
     handleOptionsButtonClick();
