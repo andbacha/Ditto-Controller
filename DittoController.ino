@@ -22,7 +22,9 @@
 LiquidCrystal lcd(2, 3, 4, 5, 6, 7);
 byte currentLoop = 1;
 byte currentOption = 0;
-byte pulsesPerBar = 1;
+byte pulsesPerBarArray[] = {1, 4, 8};
+byte pulsesPerBarIndex = 2;
+byte pulsesPerBar = pulsesPerBarArray[pulsesPerBarIndex];
 // bool isSyncPulseOdd = true;
 
 
@@ -156,13 +158,14 @@ void viewDivider() {
   while(true) {
     if (digitalRead(BTN_LEFT) == LOW) {
       waitForButtonRelease(BTN_LEFT);
-      if (pulsesPerBar == 2) pulsesPerBar--;
+      if (pulsesPerBar != 1) pulsesPerBarIndex--;
     } if (digitalRead(BTN_RIGHT) == LOW) {
       waitForButtonRelease(BTN_RIGHT);
-      if (pulsesPerBar == 1) pulsesPerBar++;
+      if (pulsesPerBar != 8) pulsesPerBarIndex++;
     } if (digitalRead(BTN_OPTIONS) == LOW) {
       break;
     }
+    pulsesPerBar = pulsesPerBarArray[pulsesPerBarIndex];
     lcd.setCursor(14, 1);
     lcd.print(pulsesPerBar);
   }
